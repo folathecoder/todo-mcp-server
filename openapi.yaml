@@ -1,0 +1,261 @@
+openapi: 3.0.3
+info:
+  title: Todo MCP API
+  description: A RESTful API for managing todos with MongoDB backend, wrapped in an MCP server for AI agent interaction
+  version: 1.0.0
+  contact:
+    name: API Support
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+tags:
+  - name: Todos
+    description: Todo management operations
+  - name: Health
+    description: Server health check
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Check if the server is running
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /api/todos:
+    get:
+      tags:
+        - Todos
+      summary: Get all todos
+      description: Retrieve a list of all todo items, sorted by creation date (newest first)
+      responses:
+        '200':
+          description: Successfully retrieved todos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Todo'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - Todos
+      summary: Create a new todo
+      description: Create a new todo item with the provided title
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+              properties:
+                title:
+                  type: string
+                  description: The title of the todo item
+                  minLength: 1
+                  example: Buy groceries
+      responses:
+        '201':
+          description: Todo created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '400':
+          description: Bad request - title is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/todos/{id}:
+    get:
+      tags:
+        - Todos
+      summary: Get a todo by ID
+      description: Retrieve a single todo item by its unique identifier
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The unique identifier of the todo item
+          schema:
+            type: string
+            example: 507f1f77bcf86cd799439011
+      responses:
+        '200':
+          description: Successfully retrieved todo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '404':
+          description: Todo not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - Todos
+      summary: Update a todo
+      description: Update an existing todo item's title and/or completion status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The unique identifier of the todo item
+          schema:
+            type: string
+            example: 507f1f77bcf86cd799439011
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: The updated title of the todo item
+                  example: Buy groceries and cook dinner
+                completed:
+                  type: boolean
+                  description: The completion status of the todo item
+                  example: true
+      responses:
+        '200':
+          description: Todo updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '404':
+          description: Todo not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Todos
+      summary: Delete a todo
+      description: Delete a todo item by its unique identifier
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The unique identifier of the todo item
+          schema:
+            type: string
+            example: 507f1f77bcf86cd799439011
+      responses:
+        '200':
+          description: Todo deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Todo deleted successfully
+                  todo:
+                    $ref: '#/components/schemas/Todo'
+        '404':
+          description: Todo not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Todo:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Unique identifier for the todo item
+          example: 507f1f77bcf86cd799439011
+        title:
+          type: string
+          description: The title of the todo item
+          example: Buy groceries
+        completed:
+          type: boolean
+          description: Whether the todo item is completed
+          default: false
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the todo was created
+          example: 2025-01-15T10:30:00.000Z
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the todo was last updated
+          example: 2025-01-15T10:30:00.000Z
+      required:
+        - _id
+        - title
+        - completed
+        - createdAt
+        - updatedAt
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: Failed to fetch todos

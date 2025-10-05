@@ -6,7 +6,7 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { connectDB } from './config/database';
-import { Todo } from './models/Todo';
+import todoService from './services/todoService';
 
 // Initialize MCP Server
 const server = new Server(
@@ -27,13 +27,26 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: 'create_todo',
-        description: 'Create a new todo item',
+        description: 'Create a new todo item with optional priority, due date, and assignee',
         inputSchema: {
           type: 'object',
           properties: {
             title: {
               type: 'string',
               description: 'The title of the todo item',
+            },
+            priority: {
+              type: 'string',
+              enum: ['low', 'medium', 'high', 'urgent'],
+              description: 'Priority level of the todo (default: medium)',
+            },
+            dueDate: {
+              type: 'string',
+              description: 'Due date in ISO 8601 format (e.g., 2025-10-15T10:00:00Z)',
+            },
+            assignee: {
+              type: 'string',
+              description: 'Person assigned to this todo',
             },
           },
           required: ['title'],
@@ -63,7 +76,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'update_todo',
-        description: 'Update a todo item',
+        description: 'Update a todo item with any combination of fields',
         inputSchema: {
           type: 'object',
           properties: {
@@ -78,6 +91,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             completed: {
               type: 'boolean',
               description: 'The completion status of the todo item',
+            },
+            priority: {
+              type: 'string',
+              enum: ['low', 'medium', 'high', 'urgent'],
+              description: 'Priority level of the todo',
+            },
+            dueDate: {
+              type: 'string',
+              description: 'Due date in ISO 8601 format',
+            },
+            assignee: {
+              type: 'string',
+              description: 'Person assigned to this todo',
             },
           },
           required: ['id'],
@@ -97,6 +123,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['id'],
         },
       },
+      {
+        name: 'get_current_datetime',
+        description: 'Get the current date and time in ISO 8601 format',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+      },
     ],
   };
 });
@@ -108,9 +142,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       case 'create_todo': {
-        const { title } = args as { title: string };
-        const todo = new Todo({ title });
-        await todo.save();
+        const { title, priority, dueDate, assignee } = args as {
+          title: string;
+          priority?: string;
+          dueDate?: string;
+          assignee?: string;
+        };
+        const todo = await todoService.createTodo({ title, priority, dueDate, assignee });
         return {
           content: [
             {
@@ -122,7 +160,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'get_todos': {
-        const todos = await Todo.find().sort({ createdAt: -1 });
+        const todos = await todoService.getAllTodos();
         return {
           content: [
             {
@@ -135,7 +173,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'get_todo': {
         const { id } = args as { id: string };
-        const todo = await Todo.findById(id);
+        const todo = await todoService.getTodoById(id);
         if (!todo) {
           return {
             content: [
@@ -158,16 +196,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'update_todo': {
-        const { id, title, completed } = args as {
+        const { id, title, completed, priority, dueDate, assignee } = args as {
           id: string;
           title?: string;
           completed?: boolean;
+          priority?: string;
+          dueDate?: string;
+          assignee?: string;
         };
-        const todo = await Todo.findByIdAndUpdate(
-          id,
-          { title, completed },
-          { new: true, runValidators: true }
-        );
+
+        const todo = await todoService.updateTodo(id, {
+          title,
+          completed,
+          priority,
+          dueDate,
+          assignee,
+        });
+
         if (!todo) {
           return {
             content: [
@@ -191,7 +236,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'delete_todo': {
         const { id } = args as { id: string };
-        const todo = await Todo.findByIdAndDelete(id);
+        const todo = await todoService.deleteTodo(id);
         if (!todo) {
           return {
             content: [
@@ -208,6 +253,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: JSON.stringify({ message: 'Todo deleted successfully', todo }, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'get_current_datetime': {
+        const datetimeInfo = todoService.getCurrentDateTime();
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(datetimeInfo, null, 2),
             },
           ],
         };

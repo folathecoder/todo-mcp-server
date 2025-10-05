@@ -61,7 +61,7 @@ paths:
       tags:
         - Todos
       summary: Create a new todo
-      description: Create a new todo item with the provided title
+      description: Create a new todo item with title, priority, due date, and assignee
       requestBody:
         required: true
         content:
@@ -76,6 +76,21 @@ paths:
                   description: The title of the todo item
                   minLength: 1
                   example: Buy groceries
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                  description: Priority level of the todo
+                  default: medium
+                  example: high
+                dueDate:
+                  type: string
+                  format: date-time
+                  description: Due date and time for the todo
+                  example: 2025-10-15T10:00:00Z
+                assignee:
+                  type: string
+                  description: Person assigned to this todo
+                  example: John Doe
       responses:
         '201':
           description: Todo created successfully
@@ -134,7 +149,7 @@ paths:
       tags:
         - Todos
       summary: Update a todo
-      description: Update an existing todo item's title and/or completion status
+      description: Update an existing todo item with any combination of fields
       parameters:
         - name: id
           in: path
@@ -158,6 +173,20 @@ paths:
                   type: boolean
                   description: The completion status of the todo item
                   example: true
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                  description: Priority level of the todo
+                  example: urgent
+                dueDate:
+                  type: string
+                  format: date-time
+                  description: Due date and time for the todo
+                  example: 2025-10-20T15:30:00Z
+                assignee:
+                  type: string
+                  description: Person assigned to this todo
+                  example: Jane Smith
       responses:
         '200':
           description: Todo updated successfully
@@ -235,6 +264,23 @@ components:
           description: Whether the todo item is completed
           default: false
           example: false
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+          description: Priority level of the todo
+          default: medium
+          example: medium
+        dueDate:
+          type: string
+          format: date-time
+          description: Due date and time for the todo
+          example: 2025-10-15T10:00:00.000Z
+          nullable: true
+        assignee:
+          type: string
+          description: Person assigned to this todo
+          example: John Doe
+          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -249,6 +295,7 @@ components:
         - _id
         - title
         - completed
+        - priority
         - createdAt
         - updatedAt
 

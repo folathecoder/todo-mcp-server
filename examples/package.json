@@ -1,0 +1,16 @@
+{
+  "name": "todo-mcp-examples",
+  "version": "1.0.0",
+  "description": "Examples for using Todo MCP Server",
+  "type": "module",
+  "scripts": {
+    "remote-client": "tsx remote-client.ts"
+  },
+  "dependencies": {
+    "@langchain/mcp": "^0.1.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}

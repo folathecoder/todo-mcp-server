@@ -1,0 +1,10 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "todo_agent": "./src/agent.ts:agent"
+  },
+  "env": {
+    "MONGODB_URI": "$MONGODB_URI",
+    "OPENAI_API_KEY": "$OPENAI_API_KEY"
+  }
+}

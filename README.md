@@ -5,7 +5,8 @@ A Node.js + TypeScript application that provides a **Todo management system** wi
 ## 🌟 Features
 
 - ✅ **REST API** - Full CRUD operations for todos
-- 🤖 **MCP Server** - AI agents can interact with todos via MCP protocol
+- 🤖 **Local MCP Server** - AI agents can interact with todos via stdio protocol
+- 🌐 **Remote MCP Server** - Cloud-hosted MCP endpoint via LangGraph (NEW!)
 - 💬 **AI Chat Agent** - Conversational interface to manage todos
 - 🎨 **Beautiful CLI** - Colorful, interactive console interface
 - 🤝 **Human-in-the-Loop** - Agent asks clarifying questions when creating todos
@@ -14,6 +15,7 @@ A Node.js + TypeScript application that provides a **Todo management system** wi
 - 👥 **Assignee Support** - Assign todos to team members
 - 📖 **OpenAPI/Swagger** - Auto-generated API documentation
 - 🗄️ **MongoDB** - Persistent data storage
+- 🔄 **Hybrid Architecture** - Use locally or call remotely from any app
 
 ## 📁 Project Structure
 
@@ -30,8 +32,17 @@ mcp-practice/
 │   │   └── todoRoutes.ts        # Express CRUD routes
 │   ├── app.ts                   # Express app setup
 │   ├── index.ts                 # HTTP server entry point
-│   ├── mcp-server.ts            # MCP server entry point
+│   ├── mcp-server.ts            # MCP server entry point (Local/stdio)
 │   └── chat-agent.ts            # AI chat agent
+├── langgraph-deployment/        # 🆕 Remote MCP deployment
+│   ├── src/
+│   │   ├── tools.ts             # LangChain tool wrappers
+│   │   ├── agent.ts             # LangGraph agent
+│   │   └── index.ts             # Test entry point
+│   ├── langgraph.json           # Deployment config
+│   └── README.md                # Deployment docs
+├── examples/
+│   └── remote-client.ts         # 🆕 Example remote MCP client
 ├── openapi.yaml                 # API documentation
 ├── package.json
 └── tsconfig.json
@@ -191,6 +202,78 @@ npx @modelcontextprotocol/inspector npm run mcp
 ```
 
 Open the URL shown in your browser to test MCP tools interactively.
+
+## 🌐 Remote MCP Access (Hybrid Architecture)
+
+This project now supports **two MCP deployment modes**:
+
+### 1. Local MCP Server (stdio)
+```bash
+npm run mcp
+```
+- Runs locally on your machine
+- Uses stdio transport
+- Perfect for Claude Desktop integration
+- Great for development and testing
+
+### 2. Remote MCP Server (LangGraph Cloud)
+```bash
+cd langgraph-deployment
+langgraph deploy
+```
+- Hosted on LangGraph Cloud
+- Accessible via HTTPS
+- Can be called from anywhere
+- Perfect for production and multi-agent systems
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────┐
+│                MongoDB Atlas                         │
+│         (Single Source of Truth)                    │
+└──────────────┬─────────────────────┬────────────────┘
+               │                     │
+               │                     │
+    ┌──────────▼─────────┐  ┌───────▼────────────────┐
+    │   Node.js MCP      │  │  LangGraph.js MCP      │
+    │   (Local/stdio)    │  │  (Cloud/HTTPS)         │
+    │                    │  │                        │
+    │ Used by:           │  │ Used by:               │
+    │ - Claude Desktop   │  │ - Quiz app (remote)    │
+    │ - Local dev        │  │ - Other agents         │
+    │ - Chat CLI         │  │ - Team apps            │
+    └────────────────────┘  └────────────────────────┘
+```
+
+**Key Benefits:**
+- ✅ Both connect to the **same MongoDB database**
+- ✅ Todos are synced in real-time
+- ✅ No code duplication (shared TodoService)
+- ✅ Use local for development, remote for production
+
+### Using the Remote MCP Server
+
+```typescript
+import { MCPClient } from "@langchain/mcp";
+
+const todoServer = new MCPClient({
+  url: "https://api.langgraph.cloud/.../mcp",
+  headers: {
+    "Authorization": "Bearer YOUR_API_KEY"
+  }
+});
+
+// Create a todo from your quiz app
+await todoServer.callTool("create_todo", {
+  title: "Study Chapter 5",
+  priority: "high"
+});
+```
+
+See `examples/remote-client.ts` for a complete example.
+
+📖 **Full deployment guide:** See `langgraph-deployment/README.md`
 
 ## 🛠️ Available Scripts
 
